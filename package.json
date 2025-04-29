@@ -3,12 +3,15 @@
   "version": "0.1.0-beta",
   "description": "Discord WebClient [2016-09 - 2019-04]",
   "main": "index.js",
-  "scripts": { "start": "node index.js" },
+  "scripts": {
+    "start": "node index.js"
+  },
   "author": "gunawan092w",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.6.8",
     "body-parser": "^1.20.2",
+    "compression": "^1.8.0",
     "express.js": "^1.0.0",
     "fs-extra": "^11.2.0"
   },

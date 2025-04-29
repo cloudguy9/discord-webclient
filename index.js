@@ -1,26 +1,20 @@
-///////////////////////////////////////////////////////////////
-//         discord-webclient [v0.1.0-beta 2024-05-24]        //
-//      https://github.com/gunawan092w/discord-webclient     // Client: 2019-04
-//        Copyright (c) Gunawan092w 2024 - MIT License       //
-///////////////////////////////////////////////////////////////
-
 const express = require('express');
 const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
 const bodyParser = require('body-parser');
+const compression = require('compression');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const https = require('https');
 
 const CACHE_DIR = path.join(__dirname, 'cache');
-const api = 'https://canary.discord.com/api/'; // Discord's API Endpoint
-const assets = 'https://canary.discord.com/assets/'; // Discord's Assets endpoint
-const altassets = 'https://web.archive.org/canary.discord.com/assets/'; // Alternative Discord Assets
-const cdn = 'https://cdn.discordapp.com';
-
+const config = require('./config.json');
+const api = config.apiendpoint;
+const assets = config.assetsendpoint;
 fs.ensureDirSync(CACHE_DIR); // Check cache folder
+
+app.use(bodyParser.json());
+app.use(compression());
 
 // Middleware to check the cache
 async function checkCache(req, res, next) {
@@ -28,25 +22,18 @@ async function checkCache(req, res, next) {
 	if (await fs.pathExists(cacheFilePath)) { return res.sendFile(cacheFilePath) } else { next() };
 }
 
-app.get('/assets/:file', checkCache, async (req, res) => {
+app.get('/assets/:file', checkCache, async (req, res, next) => {
 	const file = req.params.file; const cacheFilePath = path.join(CACHE_DIR, file);
-  
-	if (file.endsWith('.woff')) { // Usually discord would deny people downloading fonts from their server so this is an alternative mirror
+  	if (file.endsWith('.map')) {next()}
+	  else {
 		try {
-			const assetalt = altassets + file;
-			const response = await axios.get(assetalt, { responseType: 'arraybuffer' });
-			await fs.outputFile(cacheFilePath, response.data); res.send(response.data);
-		} catch (error) { console.error('Failed fetching asset:', file); res.status(500).send('Fetching failed.') }
-	} else {
-		try {
-			const asset = assets + file;
-			const response = await axios.get(asset, { responseType: 'arraybuffer' });
-			await fs.outputFile(cacheFilePath, response.data); res.sendFile(cacheFilePath);
-		} catch (error) { console.error('Failed fetching asset:', file); res.status(500).send('Fetching failed.') }
+			const url = assets + file;
+			const response = await axios.get(url, { responseType: 'arraybuffer' });
+			await fs.outputFile(cacheFilePath, response.data); 
+  			res.header('Cache-Control', 'public, max-age=86400').sendFile(cacheFilePath);
+		} catch (error) { console.error('Failed fetching:', assets + file); res.status(500).json({ error: 'Internal server error', details: error.message })}
 	}
 });
-
-app.use(bodyParser.json());
 
 app.use((req, res, next) => { // Ignore Discord tracker
 	if (req.path.startsWith('/api/') && req.path.endsWith('/science')) {
@@ -54,27 +41,7 @@ app.use((req, res, next) => { // Ignore Discord tracker
 	} next();
 });
 
-app.use((req, res, next) => { // Ignore Discord tracker
-	if (req.path.startsWith('/error-reporting-proxy/') && req.path.endsWith('/web')) {
-		return res.end(); // Returns 200 (OK) with blank message
-	} next();
-});
-
-app.use('/cdn/*', async (req, res) => {
-	const path = req.originalUrl.replace('/cdn', ''); const url = `${api}${path}`;
-	try {
-		const response = await fetch(url, { method, body, headers: {
-			'Content-type': req.headers['content-type']
-		}});
-		const responseBody = await response.text(); 
-		const contentType = response.headers.get('content-type');
-		res.status(response.status).header('Content-Type', contentType).send(responseBody);
-	} catch (error) {
-		console.error('Error forwarding request:', url);
-		res.status(500).json({ error: 'Internal server error', details: error.message });
-	}
-})
-app.use('/api/*', async (req, res) => {
+app.use('/api*', async (req, res) => {
 	const path = req.originalUrl.replace('/api', ''); const url = `${api}${path}`;
 	const method = req.method; const body = (req.method !== 'GET' && req.method !== 'HEAD') ? JSON.stringify(req.body) : null;
 
@@ -86,7 +53,6 @@ app.use('/api/*', async (req, res) => {
 				'X-Captcha-Rqtoken': req.headers['x-captcha-rqtoken'],
 				'X-Super-Properties': req.headers['x-super-properties']
 		}});
-
 		const responseBody = await response.text();
 		const contentType = response.headers.get('content-type');
 
@@ -97,7 +63,9 @@ app.use('/api/*', async (req, res) => {
 	}
 });
 
-app.use(express.static(path.join(__dirname, 'public'))); // Static folder
-app.use((req, res) => {res.status(404).sendFile(path.join(__dirname, 'public', 'index.html'))}); // Loads index.html as 404 page
-//app.listen(PORT, () => {console.log(`Server is running on port ${PORT}`)}); // Start webserver
-https.createServer({ key: fs.readFileSync('key.pem'), cert: fs.readFileSync('cert.pem') }, app).listen(PORT);
+app.use('/developers*', async (req, res) => {res.sendFile(path.join(__dirname, 'public', 'developers.html'))});
+app.use('/popout*', async (req, res) => { res.sendFile(path.join(__dirname, 'public', 'popout.html'))});
+app.use('/', express.static(path.join('public'), {maxAge: '1d'})); // Static folder
+app.use((req, res) => {res.status(404).sendFile(path.join(__dirname, 'public', 'client.html'))}); // Loads index.html as 404 page
+
+app.listen(config.port, () => {console.log(`Server is running on port ${config.port}`)}); // Start webserver
