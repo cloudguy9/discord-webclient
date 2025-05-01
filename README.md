@@ -7,7 +7,7 @@ https://dwc-demo.gunawan092w1.eu.org
 
 # Usage
 ```bash
-$ git clone https://github.com/gunawan092w/discord-webclient
+$ git clone https://github.com/cloudguy9/discord-webclient
 $ cd discord-webclient
 $ npm i
 $ node .
