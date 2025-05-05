@@ -1,5 +1,4 @@
 # discord-webclient 
-<p>Discord WebClient - [v1.0.0]</p>
 <p>Selfhostable Discord client with expressJS</p>
 
 <!-- https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts -->
