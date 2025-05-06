@@ -3,8 +3,4 @@
     "assetsendpoint": "https://discord.com/assets/",
     "apiendpoint": "https://discord.com/api/",
     "cdnendpoint": "https://cdn.discordapp.com"
-  
-    "port": "3000",
-    "assetsendpoint": "https://discord.com/assets/",
-    "apiendpoint": "https://discord.com/api/"
 }
