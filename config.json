@@ -1,6 +1,10 @@
 {
     "port": "9002",
-    "assetsendpoint": "https://canary.discord.com/assets/",
-    "apiendpoint": "https://canary.discord.com/api/",
+    "assetsendpoint": "https://discord.com/assets/",
+    "apiendpoint": "https://discord.com/api/",
     "cdnendpoint": "https://cdn.discordapp.com"
+  
+    "port": "3000",
+    "assetsendpoint": "https://discord.com/assets/",
+    "apiendpoint": "https://discord.com/api/"
 }

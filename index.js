@@ -45,7 +45,7 @@ app.use((req, res, next) => { // Ignore Discord tracker
 
 app.use('/api*', async (req, res) => {
 	const path = req.originalUrl.replace('/api', ''); const url = `${api}${path}`;
-	const method = req.method; const body = (req.method !== 'GET' && req.method !== 'HEAD') ? JSON.stringify(req.body) : null;
+	const method = req.method; const body = (req.method !== 'GET' && req.method !== 'HEAD') ? (req.body) : null;
 
 	try {
 		const response = await fetch(url, { method, body, headers: { 
