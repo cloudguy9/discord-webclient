@@ -1,6 +1,6 @@
 {
     "port": "9002",
     "assetsendpoint": "https://discord.com/assets/",
-    "apiendpoint": "https://discord.com/api/",
-    "cdnendpoint": "https://cdn.discordapp.com"
+    "cdnendpoint": "https://cdn.discordapp.com",
+    "apiendpoint": "https://discord.com/api"
 }
