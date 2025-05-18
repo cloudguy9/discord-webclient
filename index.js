@@ -2,7 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
-const bodyParser = require('body-parser');
+const helmet = require('helmet');
 const compression = require('compression');
 
 const app = express();
@@ -13,8 +13,9 @@ const api = config.apiendpoint;
 const assets = config.assetsendpoint;
 fs.ensureDirSync(CACHE_DIR); // Check cache folder
 
-app.use(bodyParser.json());
+app.use(express.raw({type: '*/*'}));
 app.use(compression());
+app.use(helmet({contentSecurityPolicy: false}));
 
 // Middleware to check the cache
 async function checkCache(req, res, next) {
@@ -24,8 +25,7 @@ async function checkCache(req, res, next) {
 
 app.get('/assets/:file', checkCache, async (req, res, next) => {
 	const file = req.params.file; const cacheFilePath = path.join(CACHE_DIR, file);
-  	if (file.endsWith('.map')) {next()}
-	  else {
+  	if (file.endsWith('.map')) {next()} else {
 		try {
 			const url = assets + file;
 			const response = await axios.get(url, { responseType: 'arraybuffer' });
@@ -46,13 +46,7 @@ app.use('/api*', async (req, res) => {
 	const method = req.method; const body = (req.method !== 'GET' && req.method !== 'HEAD') ? (req.body) : null;
 
 	try {
-		const response = await fetch(url, { method, body, headers: { 
-				'Content-type': req.headers['content-type'], 
-				'Authorization': req.headers['authorization'],
-				'X-Captcha-Key': req.headers['x-captcha-key'],
-				'X-Captcha-Rqtoken': req.headers['x-captcha-rqtoken'],
-				'X-Super-Properties': req.headers['x-super-properties']
-		}});
+		const response = await fetch(url, { method, body, headers: req.headers});
 		const responseBody = await response.text();
 		const contentType = response.headers.get('content-type');
 
@@ -65,7 +59,7 @@ app.use('/api*', async (req, res) => {
 
 app.use('/developers*', async (req, res) => {res.sendFile(path.join(__dirname, 'public', 'developers.html'))});
 app.use('/popout*', async (req, res) => { res.sendFile(path.join(__dirname, 'public', 'popout.html'))});
-app.use('/', express.static(path.join('public'), {maxAge: '1d'})); // Static folder
+app.use('/', express.static(path.join('public'), {maxAge: '30m'})); // Static folder
 app.use((req, res) => {res.status(404).sendFile(path.join(__dirname, 'public', 'client.html'))}); // Loads index.html as 404 page
 
 app.listen(config.port, () => {console.log(`Server is running on port ${config.port}`)}); // Start webserver
