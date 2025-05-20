@@ -31,20 +31,19 @@ app.get('/assets/:file', checkCache, async (req, res, next) => {
 			const response = await axios.get(url, { responseType: 'arraybuffer' });
 			await fs.outputFile(cacheFilePath, response.data); 
   			res.header('Cache-Control', 'public, max-age=86400').sendFile(cacheFilePath);
-		} catch (error) { console.error('Failed fetching:', assets + file); res.status(500).json({ error: 'Internal server error', details: error.message })}
+		} catch (error) { console.error('Failed fetching:', assets + file); res.sendStatus(500).json({ error: 'Internal server error', details: error.message })}
 	}
 });
 
 app.use((req, res, next) => { // Ignore Discord tracker
-	if (req.path.startsWith('/api/') && req.path.endsWith('/science')) {
-		return res.end(); // Returns 200 (OK) with blank message
-	} next();
+	if (req.originalUrl.includes('/science')){res.sendStatus(403)}; 
+	next();
 });
 
 app.use('/api*', async (req, res) => {
 	const path = req.originalUrl.replace('/api', ''); const url = `${api}${path}`;
 	const method = req.method; const body = (req.method !== 'GET' && req.method !== 'HEAD') ? (req.body) : null;
-
+	delete req.headers['origin'];
 	try {
 		const response = await fetch(url, { method, body, headers: req.headers});
 		const responseBody = await response.text();
