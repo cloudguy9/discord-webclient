@@ -31,7 +31,7 @@ app.get('/assets/:file', checkCache, async (req, res, next) => {
 			const response = await axios.get(url, { responseType: 'arraybuffer' });
 			await fs.outputFile(cacheFilePath, response.data); 
   			res.header('Cache-Control', 'public, max-age=86400').sendFile(cacheFilePath);
-		} catch (error) { console.error('Failed fetching:', assets + file); res.sendStatus(500).json({ error: 'Internal server error', details: error.message })}
+		} catch (error) { console.error('Failed fetching:', assets + file); res.status(500).json({ error: 'Internal server error', details: error.message })}
 	}
 });
 
