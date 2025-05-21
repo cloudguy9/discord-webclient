@@ -4,7 +4,6 @@
   "description": "Discord WebClient",
   "main": "index.js",
   "scripts": {
-    "build": "npm i",
     "start": "node index.js"
   },
   "author": "gunawan092w",
