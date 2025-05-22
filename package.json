@@ -1,7 +1,7 @@
 {
   "name": "discord-webclient",
-  "version": "0.1.0-beta",
-  "description": "Discord WebClient [2016-09 - 2019-04]",
+  "version": "1.0.2",
+  "description": "Discord WebClient",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"

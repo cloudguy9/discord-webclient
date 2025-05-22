@@ -37,16 +37,14 @@ app.get('/assets/:file', checkCache, async (req, res, next) => {
 });
 
 app.use((req, res, next) => { // Ignore Discord tracker
-	if (req.path.startsWith('/api/') && req.path.endsWith('/science')) {
-		return res.end(); // Returns 200 (OK) with blank message
-	}
+	if (req.originalUrl.includes('/science')){res.sendStatus(403)};
 	next();
 });
 
 app.use('/api*', async (req, res) => {
 	const path = req.originalUrl.replace('/api', ''); const url = `${api}${path}`;
 	const method = req.method; const body = (req.method !== 'GET' && req.method !== 'HEAD') ? (req.body) : null;
-
+	delete req.headers['origin'];
 	try {
 		const response = await fetch(url, { method, body, headers: req.headers});
 		const responseBody = await response.text();
