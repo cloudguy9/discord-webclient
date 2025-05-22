@@ -9,6 +9,7 @@ const app = express();
 
 const CACHE_DIR = path.join(__dirname, 'cache');
 const config = require('./config.json');
+const cdn = config.cdnendpoint;
 const api = config.apiendpoint;
 const assets = config.assetsendpoint;
 fs.ensureDirSync(CACHE_DIR); // Check cache folder
@@ -36,7 +37,7 @@ app.get('/assets/:file', checkCache, async (req, res, next) => {
 });
 
 app.use((req, res, next) => { // Ignore Discord tracker
-	if (req.originalUrl.includes('/science')){res.sendStatus(403)}; 
+	if (req.originalUrl.includes('/science')){res.sendStatus(403)};
 	next();
 });
 
@@ -55,6 +56,30 @@ app.use('/api*', async (req, res) => {
 		res.status(500).json({ error: 'Internal server error', details: error.message });
 	}
 });
+
+app.use('/cdn*', async (req, res) => {
+	const path = req.originalUrl.replace('/cdn', ''); const url = `${cdn}${path}`;
+	const method = req.method;
+	const body = null;
+
+	try {
+		const response = await fetch(url, { method, body, headers: { 
+				'Content-type': req.headers['content-type'], 
+		}});
+
+		let chunks = []
+		for await (const chunk of response.body) {
+			chunks.push(chunk)
+		}
+		const responseBody = Buffer.concat(chunks);
+		const contentType = response.headers.get('content-type');
+
+		res.status(response.status).header('Content-Type', contentType).send(responseBody);
+	} catch (error) {
+		console.error('Error forwarding request:', url);
+		res.status(500).json({ error: 'Internal server error', details: error.message });
+	}
+})
 
 app.use('/developers*', async (req, res) => {res.sendFile(path.join(__dirname, 'public', 'developers.html'))});
 app.use('/popout*', async (req, res) => { res.sendFile(path.join(__dirname, 'public', 'popout.html'))});
