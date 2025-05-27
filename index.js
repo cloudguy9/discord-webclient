@@ -9,9 +9,11 @@ const app = express();
 
 const CACHE_DIR = path.join(__dirname, 'cache');
 const config = require('./config.json');
+
+const api = config.endpoint + "/api";
+const assets = config.endpoint + "/assets/";
 const cdn = config.cdnendpoint;
-const api = config.apiendpoint;
-const assets = config.assetsendpoint;
+
 fs.ensureDirSync(CACHE_DIR); // Check cache folder
 
 app.use(express.raw({type: '*/*'}));
@@ -20,20 +22,39 @@ app.use(helmet({contentSecurityPolicy: false}));
 
 // Middleware to check the cache
 async function checkCache(req, res, next) {
-	const file = req.params.file; const cacheFilePath = path.join(CACHE_DIR, file);
-	if (await fs.pathExists(cacheFilePath)) { return res.sendFile(cacheFilePath) } else { next() };
-}
+	const file = req.params.file; 
+	const cacheFilePath = path.join(CACHE_DIR, file);
+	if (await fs.pathExists(cacheFilePath)) { 
+		return res.sendFile(cacheFilePath) 
+	} else {next()};
+};
 
 app.get('/assets/:file', checkCache, async (req, res, next) => {
 	const file = req.params.file; const cacheFilePath = path.join(CACHE_DIR, file);
   	if (file.endsWith('.map')) {next()} else {
+		const url = assets + file;
 		try {
-			const url = assets + file;
-			const response = await axios.get(url, { responseType: 'arraybuffer' });
-			await fs.outputFile(cacheFilePath, response.data); 
-  			res.header('Cache-Control', 'public, max-age=86400').sendFile(cacheFilePath);
-		} catch (error) { console.error('Failed fetching:', assets + file); res.status(500).json({ error: 'Internal server error', details: error.message })}
-	}
+			const response = await axios.get(url, { responseType: 'arrayBuffer' });
+			await fs.outputFile(cacheFilePath, response.data);
+			res.header('Cache-Control', 'public, max-age=86400').sendFile(cacheFilePath);
+		} catch (error) {
+			console.error('Failed fetching:', url);
+			res.status(500).json({ error: 'Internal server error', details: error.message });
+		};
+	};
+});
+
+app.get('/cdn/*', async (req, res) => {
+	const path = req.originalUrl.replace('/cdn', '')
+	const url = cdn + path;
+		await axios.get(url, {responseType: 'arraybuffer'})
+			.then((response) => {
+				res.header('Cache-Control', 'public, max-age=86400').send(response.data);
+			})
+			.catch(function(error) {
+				console.log(error);
+				res.status(500).json({ message: 'Internal server error (proxy)', code: 500, error: error.message });
+			});
 });
 
 app.use((req, res, next) => { // Ignore Discord tracker
@@ -42,44 +63,27 @@ app.use((req, res, next) => { // Ignore Discord tracker
 });
 
 app.use('/api*', async (req, res) => {
-	const path = req.originalUrl.replace('/api', ''); const url = `${api}${path}`;
-	const method = req.method; const body = (req.method !== 'GET' && req.method !== 'HEAD') ? (req.body) : null;
+	const path = req.originalUrl.replace('/api', ''); 
+	const url = api + path;
+	const method = req.method.toLowerCase();
+	const data = (method !== 'get' && method !== 'head') ? (req.body) : null;
+	
+	delete req.headers['host'];
 	delete req.headers['origin'];
-	try {
-		const response = await fetch(url, { method, body, headers: req.headers});
-		const responseBody = await response.text();
-		const contentType = response.headers.get('content-type');
 
-		res.status(response.status).header('Content-Type', contentType).send(responseBody);
-	} catch (error) {
-		console.error('Error forwarding request:', url);
-		res.status(500).json({ error: 'Internal server error', details: error.message });
-	}
+	await axios(url, { method, data, headers: req.headers})
+		.then((response) => {
+			res.status(response.status).header('Content-Type', response.headers.get('content-type')).send(response.data);
+		})
+		.catch (function (error) {
+			if (error.request) {
+				res.status(error.response.status).send(error.response.data);
+			} else {
+				console.error('Error forwarding request:', url);
+				res.status(500).json({ message: 'Internal server error (proxy)', code: 500, error: error.message })
+			};
+		});
 });
-
-app.use('/cdn*', async (req, res) => {
-	const path = req.originalUrl.replace('/cdn', ''); const url = `${cdn}${path}`;
-	const method = req.method;
-	const body = null;
-
-	try {
-		const response = await fetch(url, { method, body, headers: { 
-				'Content-type': req.headers['content-type'], 
-		}});
-
-		let chunks = []
-		for await (const chunk of response.body) {
-			chunks.push(chunk)
-		}
-		const responseBody = Buffer.concat(chunks);
-		const contentType = response.headers.get('content-type');
-
-		res.status(response.status).header('Content-Type', contentType).send(responseBody);
-	} catch (error) {
-		console.error('Error forwarding request:', url);
-		res.status(500).json({ error: 'Internal server error', details: error.message });
-	}
-})
 
 app.use('/developers*', async (req, res) => {res.sendFile(path.join(__dirname, 'public', 'developers.html'))});
 app.use('/popout*', async (req, res) => { res.sendFile(path.join(__dirname, 'public', 'popout.html'))});
