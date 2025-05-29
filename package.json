@@ -1,7 +1,7 @@
 {
   "name": "discord-webclient",
-  "version": "1.0.2",
-  "description": "Discord WebClient",
+  "version": "1.1.0",
+  "description": "Selfhostable discord client proxy",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
