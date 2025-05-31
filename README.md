@@ -3,7 +3,7 @@
 
 <!-- https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts -->
 > [!CAUTION]
-> Some users reported that doing actions like joining servers, send friend request, etc, will get your account a violation for spamming. Be careful when using this as it may get your account banned!
+> Some users reported that doing actions like joining servers, send friend request, etc, will get your account a violation for spamming. Be careful when using this as it may get your account disabled!
 >
 > discord-webclient violates Discord's Terms of services, use it at your own risk!
 
