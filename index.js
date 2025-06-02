@@ -16,16 +16,14 @@ const cdn = config.cdnendpoint;
 
 fs.ensureDirSync(CACHE_DIR); // Check cache folder
 
-app.use(express.raw({type: '*/*'}));
-app.use(compression());
-app.use(helmet({contentSecurityPolicy: false}));
+app.use(express.raw({type: '*/*'}), compression(), helmet({contentSecurityPolicy: false}));
 
 // Middleware to check the cache
 async function checkCache(req, res, next) {
 	const file = req.params.file; 
 	const cacheFilePath = path.join(CACHE_DIR, file);
 	if (await fs.pathExists(cacheFilePath)) { 
-		return res.sendFile(cacheFilePath) 
+		return res.sendFile(cacheFilePath);
 	} else {next()};
 };
 
@@ -45,7 +43,7 @@ app.get('/assets/:file', checkCache, async (req, res, next) => {
 });
 
 app.get('/cdn/*', async (req, res) => {
-	const path = req.originalUrl.replace('/cdn', '')
+	const path = req.originalUrl.replace('/cdn', '');
 	const url = cdn + path;
 		await axios.get(url, {responseType: 'arraybuffer'})
 			.then((response) => {
@@ -80,7 +78,7 @@ app.use('/api*', async (req, res) => {
 				res.status(error.response.status).send(error.response.data);
 			} else {
 				console.error('Error forwarding request:', url);
-				res.status(500).json({ message: 'Internal server error (proxy)', code: 500, error: error.message })
+				res.status(500).json({ message: 'Internal server error (proxy)', code: 500, error: error.message });
 			};
 		});
 });
