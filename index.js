@@ -65,10 +65,12 @@ app.use('/api*', async (req, res) => {
 	const url = api + path;
 	const method = req.method.toLowerCase();
 	const data = (method !== 'get' && method !== 'head') ? (req.body) : null;
-	
+
 	delete req.headers['host'];
 	delete req.headers['origin'];
-
+	delete req.headers['x-forwarded-for'];
+	delete req.headers['x-forwarded-proto'];
+	
 	await axios(url, { method, data, headers: req.headers})
 		.then((response) => {
 			res.status(response.status).header('Content-Type', response.headers.get('content-type')).send(response.data);
@@ -87,5 +89,6 @@ app.use('/developers*', async (req, res) => {res.sendFile(path.join(__dirname, '
 app.use('/popout*', async (req, res) => { res.sendFile(path.join(__dirname, 'public', 'popout.html'))});
 app.use('/', express.static(path.join('public'), {maxAge: '30m'})); // Static folder
 app.use((req, res) => {res.status(404).sendFile(path.join(__dirname, 'public', 'client.html'))}); // Loads index.html as 404 page
+app.use('/verify*', async (req, res) => { res.sendFile(path.join(__dirname, 'public', 'verify.html'))})
 
 app.listen(config.port, () => {console.log(`Server is running on port ${config.port}`)}); // Start webserver
